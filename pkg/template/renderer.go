@@ -62,14 +62,10 @@ func (s *Renderer) createStageFile(funcMap map[string]interface{}) error {
 		"template": s.Src,
 	}).Debug("compiling source template")
 
-	set := pongo2.NewSet("local", &pongo2.LocalFilesystemLoader{})
-	set.Options = &pongo2.Options{
-		TrimBlocks:   true,
-		LStripBlocks: true,
-	}
-	tmpl, err := set.FromFile(s.Src)
+	executionStartTime := time.Now()
+	tmpl, err := template.New(filepath.Base(s.Src)).Funcs(funcMap).ParseFiles(s.Src)
 	if err != nil {
-		return errors.Wrapf(err, "set.FromFile(%s) failed", s.Src)
+		return fmt.Errorf("Unable to process template %s, %s", s.Src, err)
 	}
 
 	// create TempFile in Dest directory to avoid cross-filesystem issues
@@ -83,12 +79,12 @@ func (s *Renderer) createStageFile(funcMap map[string]interface{}) error {
 		return errors.Wrap(err, "couldn't create tempfile")
 	}
 
-	executionStartTime := time.Now()
-	if err = tmpl.ExecuteWriter(funcMap, temp); err != nil {
+	if err = tmpl.Execute(temp, nil); err != nil {
 		temp.Close()
 		os.Remove(temp.Name())
 		return errors.Wrap(err, "template execution failed")
 	}
+
 	metrics.MeasureSince([]string{"files", "template_execution_duration"}, executionStartTime)
 
 	temp.Close()

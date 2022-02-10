@@ -15,10 +15,12 @@
 package template
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net"
 	"os"
+	"path"
 	"sort"
 	"strconv"
 	"strings"
@@ -93,6 +95,27 @@ func newFuncMap() map[string]interface{} {
 		"dateRFC3339": dateRFC3339Now,
 		"createMap":   createMap,
 		"createSet":   createSet,
+
+		"base":         path.Base,
+		"split":        strings.Split,
+		"json":         UnmarshalJsonObject,
+		"jsonArray":    UnmarshalJsonArray,
+		"dir":          path.Dir,
+		"join":         strings.Join,
+		"datetime":     time.Now,
+		"toUpper":      strings.ToUpper,
+		"toLower":      strings.ToLower,
+		"trimSuffix":   strings.TrimSuffix,
+		"base64Encode": Base64Encode,
+		"base64Decode": Base64Decode,
+		"parseBool":    strconv.ParseBool,
+		"add":          func(a, b int) int { return a + b },
+		"sub":          func(a, b int) int { return a - b },
+		"div":          func(a, b int) int { return a / b },
+		"mod":          func(a, b int) int { return a % b },
+		"mul":          func(a, b int) int { return a * b },
+		"seq":          Seq,
+		"atoi":         strconv.Atoi,
 	}
 
 	return m
@@ -163,4 +186,35 @@ func unixTimestampNow() string {
 
 func dateRFC3339Now() string {
 	return time.Now().Format(time.RFC3339)
+}
+
+// Seq creates a sequence of integers. It's named and used as GNU's seq.
+// Seq takes the first and the last element as arguments. So Seq(3, 5) will generate [3,4,5]
+func Seq(first, last int) []int {
+	var arr []int
+	for i := first; i <= last; i++ {
+		arr = append(arr, i)
+	}
+	return arr
+}
+
+func UnmarshalJsonObject(data string) (map[string]interface{}, error) {
+	var ret map[string]interface{}
+	err := json.Unmarshal([]byte(data), &ret)
+	return ret, err
+}
+
+func UnmarshalJsonArray(data string) ([]interface{}, error) {
+	var ret []interface{}
+	err := json.Unmarshal([]byte(data), &ret)
+	return ret, err
+}
+
+func Base64Encode(data string) string {
+	return base64.StdEncoding.EncodeToString([]byte(data))
+}
+
+func Base64Decode(data string) (string, error) {
+	s, err := base64.StdEncoding.DecodeString(data)
+	return string(s), err
 }
